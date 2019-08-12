@@ -1,4 +1,9 @@
+import 'package:dart_utils/dart_util.dart';
 import 'package:quiver/core.dart';
+
+// ^(?<dice>\d+)d(?<adds>(?:\+|-)\d+)?$
+// e.g., 1d, 2d-1, 3d+2, etc...
+RegExp _rDieRoll = RegExp('^(?<dice>$R_DIGITS)d(?<adds>$R_NUMBER)?\$');
 
 /// Represents a DieRoll in GURPS.
 ///
@@ -10,37 +15,6 @@ import 'package:quiver/core.dart';
 /// in the range of [-1 to 2], inclusive.  The number of dice is increased or
 /// decreased as the modifier moves beyond that range.
 class DieRoll {
-  final int _numberOfDice;
-  final int _adds;
-  final bool _normalize;
-
-  DieRoll({int dice = 0, int adds = 0, bool normalize = true})
-      : this._numberOfDice =
-            normalize ? DieRoll.normalize(dice, adds)[0] : dice,
-        this._adds = normalize ? DieRoll.normalize(dice, adds)[1] : adds,
-        this._normalize = normalize;
-
-  factory DieRoll.fromString(String text, {bool normalize = true}) {
-    final natural_number = r'\d+'; // all positive integers
-    final signed_integer =
-        r'(?:\+|-)' + natural_number; // either (plus OR minus) plus an integer
-
-    // ^(\d+)d((?:\+|-)\d+)?$
-    RegExp e = RegExp(r'^(?<dice>' +
-        natural_number +
-        r')d(?<adds>' +
-        signed_integer +
-        r')?$');
-
-    if (e.hasMatch(text)) {
-      return DieRoll(
-          dice: int.tryParse(e.firstMatch(text).namedGroup('dice')),
-          adds: int.tryParse(e.firstMatch(text).namedGroup('adds') ?? '0'),
-          normalize: normalize);
-    }
-    return null;
-  }
-
   /// Return the equivalent add value if dice is converted to use (base)d as
   /// its base.
   ///
@@ -94,6 +68,34 @@ class DieRoll {
     return [numberOfDice, adds];
   }
 
+  final int _numberOfDice;
+  final int _adds;
+  final bool _normalize;
+
+  ///
+  /// Create a Die Roll with the given dice and adds, with optional
+  /// normalization.
+  ///
+  DieRoll({int dice = 0, int adds = 0, bool normalize = true})
+      : this._numberOfDice =
+            normalize ? DieRoll.normalize(dice, adds)[0] : dice,
+        this._adds = normalize ? DieRoll.normalize(dice, adds)[1] : adds,
+        this._normalize = normalize;
+
+  ///
+  /// Create a DieRoll from a string like '1d', '2d-1', or '3d+2'.
+  ///
+  factory DieRoll.fromString(String text, {bool normalize = true}) {
+    if (_rDieRoll.hasMatch(text)) {
+      return DieRoll(
+          dice: int.tryParse(_rDieRoll.firstMatch(text).namedGroup('dice')),
+          adds: int.tryParse(
+              _rDieRoll.firstMatch(text).namedGroup('adds') ?? '0'),
+          normalize: normalize);
+    }
+    return null;
+  }
+
   int get adds => _adds;
 
   int get numberOfDice => _numberOfDice;
@@ -115,17 +117,9 @@ class DieRoll {
       DieRoll(adds: (DieRoll.denormalize(this, 0) / divisor).floor());
 
   @override
-  String toString() {
-    if (_adds == 0) {
-      return "${_numberOfDice}d";
-    }
-
-    String sign = "";
-    if (!_adds.isNegative) {
-      sign = "+";
-    }
-    return "${this._numberOfDice}d${sign}${_adds}";
-  }
+  String toString() => (_adds == 0)
+      ? "${_numberOfDice}d"
+      : "${_numberOfDice}d${_adds.isNegative ? '' : '+'}${_adds}";
 
   @override
   bool operator ==(Object o) =>
