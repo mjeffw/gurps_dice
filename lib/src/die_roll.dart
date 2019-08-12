@@ -5,7 +5,7 @@ import 'package:quiver/core.dart';
 
 // ^(?<dice>\d+)d(?<adds>(?:\+|-)\d+)?$
 // e.g., 1d, 2d-1, 3d+2, etc...
-String dieRollPattern = '(?<dice>$R_DIGITS)d(?<adds>$R_SIGN$R_DIGITS)?';
+const String dieRollPattern = '(?<dice>$R_DIGITS)d(?<adds>$R_SIGN$R_DIGITS)?';
 RegExp _dieRollRegExp = RegExp('^$dieRollPattern\$');
 
 /// Represents a DieRoll in GURPS.
