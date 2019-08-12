@@ -3,10 +3,10 @@ import 'package:gurps_dice/src/die_roll.dart';
 
 main() {
   // Create based on a string
-  DieRoll twoDminus1 = DieRoll.fromString('2d-1');
+  var twoDminus1 = DieRoll.fromString('2d-1');
 
   // Create based on number of dice and adds
-  DieRoll d2 = DieRoll(dice: 2);
+  var d2 = DieRoll(dice: 2);
 
   // Do dice math
   assert(twoDminus1 + 1 == d2);
@@ -23,11 +23,18 @@ main() {
   var roll1d = DieRoll(dice: 1, normalize: false);
 
   assert(roll1d + 4 != DieRoll(dice: 2));
-  assert(roll1d + 4 == DieRoll(dice: 1, adds: 4, normalize: false));
+  assert(roll1d + 4 == DieRoll.fromString('1d+4', normalize: false));
 
   var roll2d = DieRoll(dice: 2, normalize: false);
-  assert(roll2d + 7 == DieRoll(dice: 2, adds: 7, normalize: false));
+  assert(roll2d + 7 == DieRoll.fromString('2d+7', normalize: false));
 
   assert(DieRoll.fromString('3d-3', normalize: false) ==
       DieRoll(dice: 3, adds: -3, normalize: false));
+
+  // You can roll dice:
+  var dThree = DieRoll.fromString('3d');
+  for (var i = 0; i < 1000; i++) {
+    int roll = dThree.roll();
+    assert(roll >= 3 && roll <= 18);
+  }
 }

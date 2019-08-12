@@ -142,4 +142,13 @@ void main() {
     expect(DieRoll(dice: 4, adds: -2).hashCode,
         equals(DieRoll(dice: 3, adds: 2).hashCode));
   });
+
+  test('you can roll dice', () {
+    // You can roll dice:
+    var dThree = DieRoll.fromString('3d-2');
+    for (var i = 0; i < 1000; i++) {
+      int roll = dThree.roll();
+      expect(roll, inInclusiveRange(1, 16));
+    }
+  });
 }

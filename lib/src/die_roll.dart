@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dart_utils/dart_util.dart';
 import 'package:quiver/core.dart';
 
@@ -127,4 +129,19 @@ class DieRoll {
 
   @override
   int get hashCode => hash2(_adds.hashCode, _numberOfDice.hashCode);
+
+  static Random random;
+
+  int roll() {
+    if (random == null) {
+      random = Random();
+    }
+
+    int total = adds;
+    for (var d = 0; d < numberOfDice; d++) {
+      total += random.nextInt(6) + 1;
+    }
+
+    return total;
+  }
 }
