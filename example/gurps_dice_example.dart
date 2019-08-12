@@ -20,16 +20,16 @@ main() {
   assert(DieRoll.fromString('3d-3') == DieRoll(dice: 2, adds: 1));
 
   // Normalization can be turned off.
-  var roll1d = DieRoll(dice: 1, normalize: false);
+  var roll1d = DieRoll(dice: 1, normalized: false);
 
   assert(roll1d + 4 != DieRoll(dice: 2));
   assert(roll1d + 4 == DieRoll.fromString('1d+4', normalize: false));
 
-  var roll2d = DieRoll(dice: 2, normalize: false);
+  var roll2d = DieRoll(dice: 2, normalized: false);
   assert(roll2d + 7 == DieRoll.fromString('2d+7', normalize: false));
 
   assert(DieRoll.fromString('3d-3', normalize: false) ==
-      DieRoll(dice: 3, adds: -3, normalize: false));
+      DieRoll(dice: 3, adds: -3, normalized: false));
 
   // You can roll dice:
   var dThree = DieRoll.fromString('3d');

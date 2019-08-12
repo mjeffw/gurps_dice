@@ -5,7 +5,8 @@ import 'package:quiver/core.dart';
 
 // ^(?<dice>\d+)d(?<adds>(?:\+|-)\d+)?$
 // e.g., 1d, 2d-1, 3d+2, etc...
-RegExp _rDieRoll = RegExp('^(?<dice>$R_DIGITS)d(?<adds>$R_NUMBER)?\$');
+String dieRollPattern = '(?<dice>$R_DIGITS)d(?<adds>$R_SIGN$R_DIGITS)?';
+RegExp _dieRollRegExp = RegExp('^$dieRollPattern\$');
 
 /// Represents a DieRoll in GURPS.
 ///
@@ -17,6 +18,11 @@ RegExp _rDieRoll = RegExp('^(?<dice>$R_DIGITS)d(?<adds>$R_NUMBER)?\$');
 /// in the range of [-1 to 2], inclusive.  The number of dice is increased or
 /// decreased as the modifier moves beyond that range.
 class DieRoll {
+  ///
+  /// Used to roll the dice.
+  ///
+  static Random random;
+
   /// Return the equivalent add value if dice is converted to use (base)d as
   /// its base.
   ///
@@ -72,28 +78,28 @@ class DieRoll {
 
   final int _numberOfDice;
   final int _adds;
-  final bool _normalize;
+  final bool _normalized;
 
   ///
   /// Create a Die Roll with the given dice and adds, with optional
   /// normalization.
   ///
-  DieRoll({int dice = 0, int adds = 0, bool normalize = true})
-      : this._numberOfDice =
-            normalize ? DieRoll.normalize(dice, adds)[0] : dice,
-        this._adds = normalize ? DieRoll.normalize(dice, adds)[1] : adds,
-        this._normalize = normalize;
+  DieRoll({int dice = 0, int adds = 0, bool normalized = true})
+      : this._numberOfDice = normalized ? normalize(dice, adds)[0] : dice,
+        this._adds = normalized ? normalize(dice, adds)[1] : adds,
+        this._normalized = normalized;
 
   ///
   /// Create a DieRoll from a string like '1d', '2d-1', or '3d+2'.
   ///
   factory DieRoll.fromString(String text, {bool normalize = true}) {
-    if (_rDieRoll.hasMatch(text)) {
+    if (_dieRollRegExp.hasMatch(text)) {
+      var dice = _dieRollRegExp.firstMatch(text).namedGroup('dice');
+      var adds = _dieRollRegExp.firstMatch(text).namedGroup('adds');
       return DieRoll(
-          dice: int.tryParse(_rDieRoll.firstMatch(text).namedGroup('dice')),
-          adds: int.tryParse(
-              _rDieRoll.firstMatch(text).namedGroup('adds') ?? '0'),
-          normalize: normalize);
+          dice: int.tryParse(dice),
+          adds: int.tryParse(adds ?? '0'),
+          normalized: normalize);
     }
     return null;
   }
@@ -105,12 +111,12 @@ class DieRoll {
   DieRoll operator +(int adds) => DieRoll(
       dice: this._numberOfDice,
       adds: this._adds + adds,
-      normalize: this._normalize);
+      normalized: this._normalized);
 
   DieRoll operator -(int adds) => DieRoll(
       dice: this._numberOfDice,
       adds: this._adds - adds,
-      normalize: this._normalize);
+      normalized: this._normalized);
 
   DieRoll operator *(int factor) =>
       DieRoll(adds: DieRoll.denormalize(this, 0) * factor);
@@ -130,8 +136,10 @@ class DieRoll {
   @override
   int get hashCode => hash2(_adds.hashCode, _numberOfDice.hashCode);
 
-  static Random random;
-
+  ///
+  /// Roll the dice by generating [this._numberOfDice] random values from 1-6,
+  /// and adding [this._adds].
+  ///
   int roll() {
     if (random == null) {
       random = Random();
