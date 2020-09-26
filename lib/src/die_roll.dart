@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:dart_utils/dart_util.dart';
+import 'package:dart_utils/dart_utils.dart';
 import 'package:quiver/core.dart';
 
 // ^(?<dice>\d+)d(?<adds>(?:\+|-)\d+)?$
@@ -19,9 +19,66 @@ RegExp _dieRollRegExp = RegExp('^$dieRollPattern\$');
 /// decreased as the modifier moves beyond that range.
 class DieRoll {
   ///
+  /// Create a Die Roll with the given dice and adds, with optional
+  /// normalization.
+  ///
+  const DieRoll({int dice = 0, int adds = 0, bool normalized = true})
+      : this._numberOfDice = normalized
+            ? dice + (adds < 0 ? ((-adds + 2) ~/ -4) : ((adds + 1) ~/ 4))
+            : dice,
+        this._adds = normalized ? ((adds + 1) % 4) - 1 : adds,
+        this._normalized = normalized;
+
+  ///
+  /// Create a DieRoll from a string like '1d', '2d-1', or '3d+2'.
+  ///
+  factory DieRoll.fromString(String text, {bool normalize = true}) {
+    if (_dieRollRegExp.hasMatch(text)) {
+      var dice = _dieRollRegExp.firstMatch(text).namedGroup('dice');
+      var adds = _dieRollRegExp.firstMatch(text).namedGroup('adds');
+      return DieRoll(
+          dice: int.tryParse(dice),
+          adds: int.tryParse(adds ?? '0'),
+          normalized: normalize);
+    }
+    return null;
+  }
+
+  ///
   /// Used to roll the dice.
   ///
   static Random random;
+
+  final int _numberOfDice;
+  final int _adds;
+  final bool _normalized;
+
+  int get adds => _adds;
+
+  int get numberOfDice => _numberOfDice;
+
+  /// Converts to GURPS standard form, i.e., the adds cannot be anything other
+  /// than -1, 0, +1, or +2.
+  ///
+  /// The normalization algorithm is hard to describe, but it is clear with
+  /// some examples:
+  ///
+  /// (N)d(-2) == (N-1)d(+2) -- 5d-2 == 4d+2
+  /// (N)d(-1) == (N)d(-1)   -- 5d-1 == 5d-1
+  /// (N)d(+0) == (N)d(+0)   -- 5d   == 5d
+  /// (N)d(+1) == (N)d(+1)   -- 5d+1 == 5d+1
+  /// (N)d(+2) == (N)d(+2)   -- 5d+2 == 5d+2
+  /// (N)d(+3) == (N+1)d(-1) -- 5d+3 == 6d-1
+  /// (N)d(+4) == (N+1)d(+0) -- 5d+4 == 6d
+  /// (N)d(+5) == (N+1)d(+1) -- 5d+5 == 6d+1
+  /// (N)d(+6) == (N+1)d(+2) -- 5d+6 == 6d+2
+  /// (N)d(+7) == (N+2)d(-1) -- 5d+7 == 7d-1
+  static List<int> normalize(int numberOfDice, int adds) {
+    int diceResult =
+        numberOfDice + adds < 0 ? ((-adds + 2) ~/ -4) : ((adds + 1) ~/ 4);
+    int addResult = ((adds + 1) % 4) - 1;
+    return [diceResult, addResult];
+  }
 
   /// Return the equivalent add value if dice is converted to use (base)d as
   /// its base.
@@ -47,66 +104,6 @@ class DieRoll {
     adds += dice.adds;
     return adds;
   }
-
-  /// Converts to GURPS standard form, i.e., the adds cannot be anything other
-  /// than -1, 0, +1, or +2.
-  ///
-  /// The normalization algorithm is hard to describe, but it is clear with
-  /// some examples:
-  ///
-  /// (N)d(-2) == (N-1)d(+2) -- 5d-2 == 4d+2
-  /// (N)d(-1) == (N)d(-1)   -- 5d-1 == 5d-1
-  /// (N)d(+0) == (N)d(+0)   -- 5d   == 5d
-  /// (N)d(+1) == (N)d(+1)   -- 5d+1 == 5d+1
-  /// (N)d(+2) == (N)d(+2)   -- 5d+2 == 5d+2
-  /// (N)d(+3) == (N+1)d(-1) -- 5d+3 == 6d-1
-  /// (N)d(+4) == (N+1)d(+0) -- 5d+4 == 6d
-  /// (N)d(+5) == (N+1)d(+1) -- 5d+5 == 6d+1
-  /// (N)d(+6) == (N+1)d(+2) -- 5d+6 == 6d+2
-  /// (N)d(+7) == (N+2)d(-1) -- 5d+7 == 7d-1
-  static List<int> normalize(int numberOfDice, int adds) {
-    if (adds > 2) {
-      return [
-        ((numberOfDice + (adds + 1) / 4).floor()),
-        (((adds + 1) % 4) - 1)
-      ];
-    } else if (adds < -1 && numberOfDice > 1) {
-      return normalize(numberOfDice - 1, adds + 4);
-    }
-    return [numberOfDice, adds];
-  }
-
-  final int _numberOfDice;
-  final int _adds;
-  final bool _normalized;
-
-  ///
-  /// Create a Die Roll with the given dice and adds, with optional
-  /// normalization.
-  ///
-  DieRoll({int dice = 0, int adds = 0, bool normalized = true})
-      : this._numberOfDice = normalized ? normalize(dice, adds)[0] : dice,
-        this._adds = normalized ? normalize(dice, adds)[1] : adds,
-        this._normalized = normalized;
-
-  ///
-  /// Create a DieRoll from a string like '1d', '2d-1', or '3d+2'.
-  ///
-  factory DieRoll.fromString(String text, {bool normalize = true}) {
-    if (_dieRollRegExp.hasMatch(text)) {
-      var dice = _dieRollRegExp.firstMatch(text).namedGroup('dice');
-      var adds = _dieRollRegExp.firstMatch(text).namedGroup('adds');
-      return DieRoll(
-          dice: int.tryParse(dice),
-          adds: int.tryParse(adds ?? '0'),
-          normalized: normalize);
-    }
-    return null;
-  }
-
-  int get adds => _adds;
-
-  int get numberOfDice => _numberOfDice;
 
   DieRoll operator +(int adds) => DieRoll(
       dice: this._numberOfDice,

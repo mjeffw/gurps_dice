@@ -1,6 +1,6 @@
 name: gurps_dice
 description: A starting point for Dart libraries or applications.
-version: 1.0.0
+version: 1.1.0
 # homepage: https://www.example.com
 author: Wilson, Marvin (jw9615) <jw9615@att.com>
 
@@ -8,10 +8,11 @@ environment:
   sdk: '>=2.2.0 <3.0.0'
 
 dependencies:
-  quiver: ^2.0.5
+  quiver: ^2.1.3
   dart_utils: 
     git: 
-      url: https://github.com/mjeffw/dart_utils
+      url: https://github.com/mjeffw/dart_utils.git
+    version: ^2.0.0
 
 dev_dependencies:
   pedantic: ^1.0.0
